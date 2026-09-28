@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cifrado César // terminal</title>
+<style>
+:root{
+    --acento:#3b82f6;
+    --fondo:#050505;
+    --panel:#151515;
+    --borde:#2a2a2a;
+    --texto:#e5e5e5;
+    --texto-tenue:#9ca3af;
+    --rojo:#ff5c5c;
+}
+
+*{ box-sizing:border-box; }
+
+html,body{
+    height:100%;
+    margin:0;
+}
+
+body{
+    font-family:Arial, sans-serif;
+    background:var(--fondo);
+    color:var(--texto);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:24px;
+    padding-top:calc(24px + env(safe-area-inset-top,0px));
+    padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));
+    position:relative;
+    overflow-x:hidden;
+}
+
+canvas#lluvia{
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
+    z-index:0;
+    opacity:.5;
+}
+
+.contenedor{
+    position:relative;
+    z-index:2;
+    width:100%;
+    max-width:640px;
+    background:var(--panel);
+    border:1px solid var(--borde);
+    border-radius:14px;
+    padding:34px 34px 30px;
+    box-shadow:0 25px 60px rgba(0,0,0,.6);
+}
+
+h1{
+    margin:0 0 6px;
+    font-size:24px;
+    color:var(--texto);
+}
+
+.descripcion{
+    color:var(--texto-tenue);
+    font-size:14px;
+    margin:0 0 26px;
+    line-height:1.5;
+}
+label{
+    display:block;
+    font-size:13px;
+    font-weight:bold;
+    color:var(--texto-tenue);
+    margin:18px 0 7px;
+}
+
+input, textarea{
+    width:100%;
+    font-size:14.5px;
+    font-family:inherit;
+    background:#0b0b0b;
+    color:var(--texto);
+    border:1px solid var(--borde);
+    border-radius:8px;
+    padding:11px 12px;
+    outline:none;
+    transition:border-color .15s, box-shadow .15s;
+}
+input::placeholder, textarea::placeholder{ color:#6b7280; }
+
+input:focus, textarea:focus{
+    border-color:var(--acento);
+    box-shadow:0 0 0 2px rgba(59,130,246,.25);
+}
+
+textarea{ min-height:130px; resize:vertical; line-height:1.5; }
+
+input[type="range"]{
+    padding:0;
+    -webkit-appearance:none;
+    appearance:none;
+    height:4px;
+    background:var(--borde);
+    border:none;
+    border-radius:2px;
+}
+input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:16px;height:16px;
+    border-radius:50%;
+    background:var(--acento);
+    cursor:pointer;
+    margin-top:-6px;
+}
+input[type="range"]::-moz-range-thumb{
+    width:16px;height:16px;border:none;border-radius:50%;
+    background:var(--acento);
+    cursor:pointer;
+}
+
+.valor{
+    display:inline-block;
+    background:var(--acento);
+    color:#fff;
+    padding:2px 10px;
+    border-radius:20px;
+    margin-left:6px;
+    font-size:12.5px;
+}
+
+.resultado{
+    background:#0b0b0b;
+    border:1px solid var(--borde);
+    border-radius:8px;
+    padding:14px 16px;
+    min-height:100px;
+    white-space:pre-wrap;
+    word-wrap:break-word;
+    font-size:14px;
+    line-height:1.55;
+    color:var(--texto);
+}
+
+button{
+    width:100%;
+    margin-top:26px;
+    padding:14px;
+    font-size:15px;
+    font-family:inherit;
+    font-weight:bold;
+    border:none;
+    border-radius:8px;
+    background:var(--acento);
+    color:#fff;
+    cursor:pointer;
+    transition:background .15s;
+}
+button:hover{
+    background:#2563eb;
+}
+
+.aviso{
+    margin-top:18px;
+    padding:12px 14px;
+    background:#0b0b0b;
+    border:1px solid var(--borde);
+    color:var(--texto-tenue);
+    border-radius:8px;
+    font-size:13px;
+    line-height:1.6;
+}
+.aviso strong{ color:var(--texto); }
+
+#mensajeEstado{
+    margin-top:14px;
+    text-align:center;
+    font-size:13px;
+    font-weight:bold;
+    min-height:16px;
+}
+
+@media (max-width:480px){
+    .contenedor{ padding:26px 20px 26px; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="lluvia"></canvas>
+
+<div class="contenedor">
+    <h1>🔐 Cifrado César</h1>
+    <p class="descripcion">Escribe un mensaje, selecciona el desplazamiento y envíalo por Gmail.</p>
+
+    <label for="correo">correo del destinatario</label>
+    <input type="email" id="correo" placeholder="destinatario@gmail.com">
+
+    <label for="asunto">asunto</label>
+    <input type="text" id="asunto" value="Has recibido un mensaje cifrado con César">
+
+    <label for="mensaje">mensaje</label>
+    <textarea id="mensaje" placeholder="escribe aquí tu mensaje..."></textarea>
+
+    <label for="desplazamiento">
+        desplazamiento
+        <span class="valor" id="valor">3</span>
+    </label>
+    <input type="range" id="desplazamiento" min="0" max="26" value="3">
+
+    <label>mensaje cifrado</label>
+    <div class="resultado" id="resultado">Aquí aparecerá el mensaje cifrado.</div>
+
+    <button onclick="enviarPorGmail()">✉ cifrar y abrir gmail</button>
+
+    <div id="mensajeEstado"></div>
+
+    <div class="aviso">
+        <strong>¿qué pasa al enviar?</strong><br>
+        Se abrirá Gmail en una nueva pestaña con el destinatario, asunto y mensaje cifrado ya colocados. Solo tendrás que presionar <strong>Enviar</strong>. No necesitas PHP ni XAMPP.
+    </div>
+</div>
+
+<script>
+    // ---- Lluvia de binario estilo "hacker" en canvas de fondo ----
+    const canvas = document.getElementById("lluvia");
+    const ctx = canvas.getContext("2d");
+    let ancho, alto, columnas, gotas;
+    const tamFuente = 15;
+
+    function ajustarTamano(){
+        ancho = canvas.width = window.innerWidth;
+        alto = canvas.height = window.innerHeight;
+        columnas = Math.floor(ancho / tamFuente);
+        gotas = new Array(columnas).fill(0).map(() => Math.floor(Math.random() * alto / tamFuente));
+    }
+    ajustarTamano();
+    window.addEventListener("resize", ajustarTamano);
+
+    function dibujar(){
+        ctx.fillStyle = "rgba(2,6,4,0.08)";
+        ctx.fillRect(0, 0, ancho, alto);
+
+        ctx.font = tamFuente + "px monospace";
+
+        for (let i = 0; i < gotas.length; i++){
+            const caracter = Math.random() > 0.5 ? "1" : "0";
+            const x = i * tamFuente;
+            const y = gotas[i] * tamFuente;
+
+            ctx.fillStyle = Math.random() > 0.975 ? "#c9ffe0" : "#00ff6a";
+            ctx.fillText(caracter, x, y);
+
+            if (y > alto && Math.random() > 0.975){
+                gotas[i] = 0;
+            }
+            gotas[i]++;
+        }
+    }
+    setInterval(dibujar, 45);
+
+    // ---- Lógica del cifrado César (sin cambios funcionales) ----
+    const mensaje = document.getElementById("mensaje");
+    const desplazamiento = document.getElementById("desplazamiento");
+    const resultado = document.getElementById("resultado");
+    const valor = document.getElementById("valor");
+    const estado = document.getElementById("mensajeEstado");
+
+    function cifrarCesar(texto, desplazamiento) {
+        const mayusculas = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
+        const minusculas = "abcdefghijklmnñopqrstuvwxyz";
+        let salida = "";
+
+        for (const caracter of texto) {
+            let posicion = mayusculas.indexOf(caracter);
+            if (posicion !== -1) {
+                salida += mayusculas[(posicion + desplazamiento) % mayusculas.length];
+                continue;
+            }
+            posicion = minusculas.indexOf(caracter);
+            if (posicion !== -1) {
+                salida += minusculas[(posicion + desplazamiento) % minusculas.length];
+                continue;
+            }
+            salida += caracter;
+        }
+        return salida;
+    }
+
+    function actualizarCifrado() {
+        const desplazamientoActual = Number(desplazamiento.value);
+        valor.textContent = desplazamientoActual;
+
+        if (mensaje.value.trim() === "") {
+            resultado.textContent = "Aquí aparecerá el mensaje cifrado.";
+            return;
+        }
+        resultado.textContent = cifrarCesar(mensaje.value, desplazamientoActual);
+    }
+
+    function enviarPorGmail() {
+        const correo = document.getElementById("correo").value.trim();
+        const asunto = document.getElementById("asunto").value.trim();
+        const texto = mensaje.value.trim();
+        const desplazamientoActual = Number(desplazamiento.value);
+
+        if (correo === "") {
+            estado.style.color = "#ff4444";
+            estado.textContent = "✕ escribe el correo del destinatario.";
+            return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+            estado.style.color = "#ff4444";
+            estado.textContent = "✕ escribe un correo válido.";
+            return;
+        }
+        if (texto === "") {
+            estado.style.color = "#ff4444";
+            estado.textContent = "✕ escribe el mensaje.";
+            return;
+        }
+
+        const cifrado = cifrarCesar(texto, desplazamientoActual);
+
+        const cuerpo =
+`Has recibido un mensaje cifrado con el método César.
+
+Desplazamiento: ${desplazamientoActual}
+
+Mensaje cifrado:
+${cifrado}
+
+Para descifrarlo, utiliza el desplazamiento ${desplazamientoActual} en sentido contrario.`;
+
+        const parametros = new URLSearchParams({
+            view: "cm", fs: "1", to: correo, su: asunto, body: cuerpo
+        });
+
+        const urlGmail = "https://mail.google.com/mail/?" + parametros.toString();
+        const ventana = window.open(urlGmail, "_blank");
+
+        if (ventana) {
+            estado.style.color = "#00ff6a";
+            estado.textContent = "✓ mensaje cifrado correctamente. gmail se abrió en una nueva pestaña.";
+        } else {
+            estado.style.color = "#ff4444";
+            estado.textContent = "✕ el navegador bloqueó la ventana. permite las ventanas emergentes.";
+        }
+    }
+
+    mensaje.addEventListener("input", actualizarCifrado);
+    desplazamiento.addEventListener("input", actualizarCifrado);
+    actualizarCifrado();
+</script>
+
+</body>
+</html>
